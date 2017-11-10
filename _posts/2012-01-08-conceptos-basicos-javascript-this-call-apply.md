@@ -1,6 +1,7 @@
 ---
 layout: post
-title: Conceptos Básicos Javascript: this, .call() y .apply()
+title: 'Conceptos Básicos Javascript: this, .call() y .apply()'
+pulished: true
 ---
 
 Antes de continuar con el Patrón Promise me gustaría explicar en paralelo Conceptos Básicos de Javascript. Entendiendo que estamos hablando de Javascript como lenguaje y no vamos a hablar sobre conceptos básicos del DOM o como abrir una nueva ventana en el navegador, sino detalles de Javascript puro, tanto en cliente como en servidor.

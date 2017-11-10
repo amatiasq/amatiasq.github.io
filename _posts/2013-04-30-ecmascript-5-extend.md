@@ -1,6 +1,7 @@
 ---
 layout: post
 title: ECMAScript 5 _.extend
+published: true
 ---
 
 A algunos ya os he comentado los problemas que [NC Zakas comenta](http://www.nczonline.net/blog/2012/12/11/are-your-mixins-ecmascript-5-compatible/) con el `_.extend` de underscore y los getters:

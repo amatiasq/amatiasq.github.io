@@ -1,9 +1,8 @@
 ---
 layout: post
 title: Construcción de objetos
+published: true
 ---
-
-##  TL;DR
 
 Buscando optimizaciones para un juego en javascript encontré [un paradigma de definición de tipos y creación de objetos][1] que cambió mi forma de ver javascript.
 

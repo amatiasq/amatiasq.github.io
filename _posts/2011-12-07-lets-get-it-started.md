@@ -1,6 +1,7 @@
 ---
 layout: post
 title: Let’s get it started!
+published: true
 ---
 
 Bueno, ha llegado la hora de dar el siguiente paso como programador: comenzar un blog para que todos puedan criticarme por poner las llaves `{` a la derecha :D

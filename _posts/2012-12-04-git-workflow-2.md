@@ -1,6 +1,7 @@
 ---
 layout: post
 title: GIT Workflow (Parte 2)
+published: true
 ---
 
 Continuando con [mi último artículo][1], llegó la hora de hablar del gran *Github Flow*:

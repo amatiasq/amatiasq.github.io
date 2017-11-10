@@ -1,6 +1,7 @@
 ---
 layout: post
-title: Experimento: Privacidad por instancias
+title: 'Experimento: Privacidad por instancias'
+published: true
 ---
 
 > Actualización 19/3/2014: Sorprendentemente parece que una propuesta del ECMAScript 6 sigue mismo el patrón descrito en este post, y yo que pensaba que era demasiado rebuscado...

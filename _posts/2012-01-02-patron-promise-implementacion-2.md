@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Patrón Promise: Implementación (II)
+title: 'Patrón Promise: Implementación (II)'
 draft: true
 ---
 

@@ -1,6 +1,7 @@
 ---
 layout: post
 title: Componentes HTML
+published: true
 ---
 
 Acabo de caer en cuenta de porqué no me gusta angular, backbone, ember...

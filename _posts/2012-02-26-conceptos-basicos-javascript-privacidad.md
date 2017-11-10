@@ -1,6 +1,7 @@
 ---
 layout: post
-title: Conceptos Básicos Javascript: Privacidad
+title: 'Conceptos Básicos Javascript: Privacidad'
+published: true
 ---
 
 ### Introducción

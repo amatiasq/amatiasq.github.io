@@ -1,6 +1,7 @@
 ---
 layout: post
-title: Patrón Promise: Implementación
+title: 'Patrón Promise: Implementación'
+published: true
 ---
 
 Lo prometido es deuda (bien lo saben las funciones) y he encontrado un momento para empezar a explicar la forma en la que he implementado el patrón Promise en mi caso, no tiene porqué ser la mejor, pero cumple con su cometido.
