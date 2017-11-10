@@ -14,31 +14,32 @@ Lo mismo ocurre cuando la página ya está cargada y el usuario hace click. Si t
 
 De esta forma todos los bloques de código que se ejecutan en javascript han sido bloques de código que entraron a la cola del *event loop* y cuando llegó su turno fueron ejecutados. Podemos entenderlo más fácilmente si implementamos un falso event loop en Javascript:
 
-    var eventLoop = {
-      _queue: [],
-    
-      add: function (fn) {
-        // añadimos la función a la cola
-        this._queue.push(fn);
-    
-        // si está desocupado ejecutar la función
-        if (!this.running)
-          this.executeNext();
-      },
-    
-      executeNext: function () {
-        if (this.running || this._queue.length === 0)
-          return;
-    
-        this.running = true;
-        var block = this._queue.shift();
-        block();
-        this.running = false;
-    
-        this.executeNext();
-      }
-    };
-    
+```javascript
+var eventLoop = {
+  _queue: [],
+
+  add: function (fn) {
+    // añadimos la función a la cola
+    this._queue.push(fn);
+
+    // si está desocupado ejecutar la función
+    if (!this.running)
+      this.executeNext();
+  },
+
+  executeNext: function () {
+    if (this.running || this._queue.length === 0)
+      return;
+
+    this.running = true;
+    var block = this._queue.shift();
+    block();
+    this.running = false;
+
+    this.executeNext();
+  }
+};
+```
 
 <a target="_black" href="http://jsfiddle.net/amatiasq/k9ebk/">Pruébame</a>
 
@@ -48,27 +49,28 @@ Cada "bloque" que el *event loop* ejecuta se llama "un tick del event loop", de 
 
 Una forma sencilla de controlar el *event loop* es mediante `setTimeout`, `setInterval` y `setImmediate`, podemos crear funciones similares que hagan la misma funcionalidad (simplificada) pero para nuestro `eventLoop`:
 
-    function mySetImmediate(fn) {
-      eventLoop.add(fn);
-    }
-    
-    function mySetTimeout(fn, milliseconds) {
-      // la unica forma de dejar pasar el tiempo
-      // es mediante el VERDADERO setTimeout ;)
-      setTimeout(function() {
-        mySetImmediate(fn);
-      }, milliseconds)
-    }
-    
-    function mySetInterval(fn, milliseconds) {
-      function execute() {
-        fn();
-        mySetTimeout(execute, milliseconds);
-      }
-    
-      mySetTimeout(execute, milliseconds);
-    }
-    
+```javascript
+function mySetImmediate(fn) {
+  eventLoop.add(fn);
+}
+
+function mySetTimeout(fn, milliseconds) {
+  // la unica forma de dejar pasar el tiempo
+  // es mediante el VERDADERO setTimeout ;)
+  setTimeout(function() {
+    mySetImmediate(fn);
+  }, milliseconds)
+}
+
+function mySetInterval(fn, milliseconds) {
+  function execute() {
+    fn();
+    mySetTimeout(execute, milliseconds);
+  }
+
+  mySetTimeout(execute, milliseconds);
+}
+```
 
 Como se puede ver tanto setTimeout como setInterval esperan la cantidad de milisegundos definida y **entonces añaden** el bloque al *event loop*, si el *event loop* está ocupado en ese momento puede tardar un poco más de lo esperado en ejecutarse nuestra función.
 
@@ -78,15 +80,14 @@ Entiendiendo esto es más fácil entender porqué Javascript funciona de la form
 *   Los bloques se encolan
 *   Se considera asíncrono a una sección de código que será ejecutada en un "tick" distinto
 
- 
-
-      var a = 1;
-      setTimeout(function() {
-        // esta función es asíncrona porque el tick que llama a setTimeout
-        // tiene que acabar antes que esta función sea invocada.
-        a = 2;
-      }, 100);
-    
+```javascript 
+var a = 1;
+setTimeout(function() {
+  // esta función es asíncrona porque el tick que llama a setTimeout
+  // tiene que acabar antes que esta función sea invocada.
+  a = 2;
+}, 100);
+```
 
 En el caso de javascript para el navegador además nos encontramos con que el *event loop* es compartido por Javascript y el motor de renderizado del navegador. Como el *event loop* solo puede ejecutar un bloque por vez resulta que si estamos ejecutando Javascript el navegador no puede renderizar la página y vice versa, si la página tarda mucho en renderizarse retrasará la ejecución del Javascript. Esto es así porque desde Javascript podemos modificar el DOM y si el navegador intenta renderizar la página mientras nosotros la modificamos tendríamos otro tipo de problemas peores.
 
@@ -98,28 +99,32 @@ Cuando Javascript fue desarrollado la comunicación asíncrona con el DOM se sol
 
 El problema empezó cuando empezamos a usar eventos para cosas no tan claras, como eventos puntuales que solo se disparaban una vez:
 
-    window.addEventListener('load', function() { ... });
-    someAjax().onready = function() { ... };
-    
+```javascript
+window.addEventListener('load', function() { ... });
+someAjax().onready = function() { ... };
+```
 
 Incluso para controlar errores
 
-    xhr.onerror = function() { ... };
-    document.querySelector("script").onerror = function() { ... };
-    
+```javascript
+xhr.onerror = function() { ... };
+document.querySelector("script").onerror = function() { ... };
+```
 
 Hasta para controlar un progreso (en APIs modernas incluso)
 
-    var reader = new FileReader();
-    reader.onprogress = function() { ... };
-    
+```javascript
+var reader = new FileReader();
+reader.onprogress = function() { ... };
+```
 
 Pero al no estar acostumbrados a trabajar con asincronía de esta forma no fuimos capaces de ver que estabamos usando una herramienta para todo, como dicen por ahí "para un hombre con un martillo todo es un clavo".
 
 En node decidieron adaptar el patrón "Continuous Passing Style", que consiste en pasar callbacks a funciones asíncronas
 
-    fs.readFile("foo", function() { ... });
-    
+```javascript
+fs.readFile("foo", function() { ... });
+```
 
 Y por suerte integraron `EventEmitter`, que permitió crear APIs que usaran eventos sin más complejidad. Y lo que es mejor, incluyeron los streams, una forma de gestión de asincronía creada para que podamos acceder a un recurso por partes. Con el tiempo llegaron los promises que fue lo primero que me hizo plantearme si estábamos enfocando la asincronía de forma coherente.
 
@@ -134,9 +139,10 @@ En el primer caso tenemos un valor asíncrono, puede ser el valor devuelto por u
 
 Desde mi punto de vista se trata de una especie de meta-programación, tenemos un valor (el promise) que sustituye al valor real para que podamos seguir con nuestra ejecución síncrona.
 
-    var contentPromise = file.readContent();
-    return contentPromise;
-    
+```javascript
+var contentPromise = file.readContent();
+return contentPromise;
+```
 
 ###  Colección asíncrona
 
@@ -156,85 +162,93 @@ Por otro lado los streams siguen siendo útiles para su funcionalidad primera, e
 
 Incluso hay implementaciones muy completas que integran perfectamente los stream y los promises, podemos hacer de forma sencilla cosas como capturar el primer click en la pagina
 
-    // window.onClick instanceof Stream
-    var firstClick = window.onClick.first;
-    firstClick.then(function() { ... });
-    
+```javascript
+// window.onClick instanceof Stream
+var firstClick = window.onClick.first;
+firstClick.then(function() { ... });
+```
 
 Comprobar si las primeras diez teclas han sido "flecha derecha"
 
-    var firstTenKeys = input.onKeyDown.take(10);
-    var keyRightTenTimes = firstTenKeys.every(function(event) {
-      return event.keyCode === 39;
-    });
-    keyRightTenTimes.then(function(value) {
-      if (value)
-        console.log('You like left arrow! :D');
-    });
-    
+```javascript
+var firstTenKeys = input.onKeyDown.take(10);
+var keyRightTenTimes = firstTenKeys.every(function(event) {
+  return event.keyCode === 39;
+});
+keyRightTenTimes.then(function(value) {
+  if (value)
+    console.log('You like left arrow! :D');
+});
+```
 
 Capturar solo el tercer click en la página
 
-    var thirdClick = input.onKeyDown.elementAt(3);
-    thirdClick.then(function(event) {
-      console.log('You clicked three times :)');
-    });
-    
+```javascript
+var thirdClick = input.onKeyDown.elementAt(3);
+thirdClick.then(function(event) {
+  console.log('You clicked three times :)');
+});
+```
 
 Obtener todo el contenido del archivo desde el stream, no hace falta un método especial
 
-    var stream = file.getReadStream()
-    var fileContent = stream.join('');
-    fileContent.then(function(content) { ... });
-    
+```javascript
+var stream = file.getReadStream()
+var fileContent = stream.join('');
+fileContent.then(function(content) { ... });
+```
 
 O detectar el primer evento `readystatechange` en que el `readyState` sea `4`, convertirlo en promise y devolver la respuesta
 
-    return xhr.onReadyStateChange
-      .filter(function(event) {
-        return xhr.readyState === 4;
-      })
-      .first
-      .then(function() {
-        return xhr.responseText;
-      });
-    
+```javascript
+return xhr.onReadyStateChange
+  .filter(function(event) {
+    return xhr.readyState === 4;
+  })
+  .first
+  .then(function() {
+    return xhr.responseText;
+  });
+```
 
 Unificar varias operaciones
 
-    // readFile returns promise
-    var concat = new Stream([
-      readFile('./header.html'),
-      readFile('./content.html'),
-      readFile('./footer.html'),
-    ]);
-    stream.listen(function(chunk) {
-      response.write(chunk);
-    });
-    
+```javascript
+// readFile returns promise
+var concat = new Stream([
+  readFile('./header.html'),
+  readFile('./content.html'),
+  readFile('./footer.html'),
+]);
+stream.listen(function(chunk) {
+  response.write(chunk);
+});
+```
 
 Incluso cosas más complejas como detectar la primera acción del usuario en la página
 
-    // Promise.race devuelve un promise que se completará
-    // cuando el primer promise de la lista se complete
-    Promise.race([
-      window.onClick.first,
-      window.onKeyDown.first,
-      window.onMouseMove.first,
-    ]).then(function(event) {
-      console.log('El usuario ha disparado el evento ' + event.type);
-    });
-    
+```javascript
+// Promise.race devuelve un promise que se completará
+// cuando el primer promise de la lista se complete
+Promise.race([
+  window.onClick.first,
+  window.onKeyDown.first,
+  window.onMouseMove.first,
+]).then(function(event) {
+  console.log('El usuario ha disparado el evento ' + event.type);
+});
+```
 
 Y hasta capturar el evento `load` de window aunque ya haya pasado:
 
-    setTimeout(function() {
-      window.onLoad.first(function() {
-        // Me van a invocar aunque el evento
-        // ya haya pasado :)
-      });
-    }, 1000 * 60 * 60); // una hora
-    
+```javascript
+setTimeout(function() {
+  window.onLoad.first(function() {
+    // Me van a invocar aunque el evento
+    // ya haya pasado :)
+  });
+}, 1000 * 60 * 60); // una hora
+```
 
 ### Resumen
 

@@ -22,60 +22,63 @@ Además, ya a nivel de estándar, con los estilos tenemos el problema de que los
 
 Entonces me encuentro con [estas diapositivas][1] que hablan de los HTML WebComponents y resulta ser justo lo que hace falta:
 
-    <element name="x-tarjeta" extends="button">
-        <template>
-            <style>
-                h1 {
-                    color: red;
+```html
+<element name="x-tarjeta" extends="button">
+    <template>
+        <style>
+            h1 {
+                color: red;
+            }
+            img {
+                height: 32px;
+                width: 32px;
+            }
+            .separator { ... }
+        </style>
+
+        <header>
+            Full name: <content select="h1"></content>
+            Age: <content select=".age"></content>
+        </header>
+        <div class="separator"></div>
+        <section>
+            <content select="img"></content>
+        </section>
+    <template>
+
+    <script>
+        var template = this.querySelector('template');
+        this.register({ // this == <element>
+            prototype: {
+                readyCallback: function() {
+                    var dom = template.content.cloneNode(true);
+                    var shadow = this.createShadowRoot()
+                    shadow.appendChild(dom);
                 }
-                img {
-                    height: 32px;
-                    width: 32px;
-                }
-                .separator { ... }
-            </style>
-    
-            <header>
-                Full name: <content select="h1"></content>
-                Age: <content select=".age"></content>
-            </header>
-            <div class="separator"></div>
-            <section>
-                <content select="img"></content>
-            </section>
-        <template>
-    
-        <script>
-            var template = this.querySelector('template');
-            this.register({ // this == <element>
-                prototype: {
-                    readyCallback: function() {
-                        var dom = template.content.cloneNode(true);
-                        var shadow = this.createShadowRoot()
-                        shadow.appendChild(dom);
-                    }
-                }
-            });
-        </script>
-    </element>
-    
+            }
+        });
+    </script>
+</element>
+```
 
 Al estar los estilos dentro del template se vuelven a añadir al dom cada vez que creamos un `x-tarjeta` (como con angular) pero en este caso gracias al `ShadowDOM` los estilos solo se aplican al template y a su contenido.
 
 Además el estándard de html templates nos permite mezclar el template con los elementos que inserten dentro de `x-tarjeta`
 
-    <!-- Uso -->
-    <x-tarjeta>
-        <h1>A. Matías Q.</h1>
-        <div class="age">24</div>
-        <img src="/.../foto.png">
-    </x-tarjeta>
-    
+```html
+<!-- Uso -->
+<x-tarjeta>
+    <h1>A. Matías Q.</h1>
+    <div class="age">24</div>
+    <img src="/.../foto.png">
+</x-tarjeta>
+```
 
 Y por último el estándard html imports nos permite tener este componente en un archivo html independiente y transportable e importarlo en donde lo necesitemos, incluyendo otros compoentes.
 
-    <link rel="import" href="x-tarjeta.html">
-    
+```html
+<link rel="import" href="x-tarjeta.html">
+```
 
 ### Conclusión
 

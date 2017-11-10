@@ -28,20 +28,22 @@ Una vez entendido el concepto podemos pasar a la práctica, sabemos que para cre
 
 Con ésto nos ahorramos tener que poner las mismas propiedades en más de un objeto. Esto trae un nuevo concepto que puede confundir a muchos: **en Javascript todo es una instancia, y cuando heredamos de un objeto también se puede decir que estamos creando una instancia de ése objeto**, para evitar confunsiones **suele decirse que un objeto "extiende" otro**. Imaginemos que tenemos un objeto perro que hereda de animal. Que significa ésto? que la propiedad `[[Prototype]]` de perro es animal, o lo que es lo mismo:
 
-    perro.__proto__ == animal; // true
-    
+```javascript
+perro.__proto__ == animal; // true
+```
 
 El código de ejemplo es el siguiente:
 
-    var animal = {};
-    animal.estaVivo = function() {
-        return true;
-    };
-    
-    var perro = {};
-    perro.__proto__ = animal;
-    console.log(perro.estaVivo);
-    
+```javascript
+var animal = {};
+animal.estaVivo = function() {
+    return true;
+};
+
+var perro = {};
+perro.__proto__ = animal;
+console.log(perro.estaVivo);
+```
 
 <a href="http://jsfiddle.net/amatiasq/tyK4u/" target="_blank">Pruébame</a>
 
@@ -51,9 +53,10 @@ Vemos que `perro.estaVivo` es la función que asignamos a `animal` cómo puede s
 
 Y si animal no hubiese tenido la propiedad `estaVivo`? En ese caso debemos tener en cuenta que animal también es un objeto y que todos los objetos tienen prototipo, en caso de que no le asignemos ninguno su prototipo es `Object.prototype`. Es otra forma de decir que **en Javascript todos los objetos extienden `Object.prototype`**. `Object.prototype` es el equivalente a la clase `Object` de Java o C#.
 
-    var animal = {};
-    console.log(animal.__proto__ === Object.prototype);
-    
+```javascript
+var animal = {};
+console.log(animal.__proto__ === Object.prototype);
+```
 
 <a href="http://jsfiddle.net/amatiasq/29S2r/" target="_blank">Pruébame</a>
 
@@ -61,15 +64,16 @@ Y si tampoco encuentra la propiedad en `Object.prototype`? lo busca en el `[[Pro
 
 Esta jerarquía de prototipos suele llamarse **cadena de prototipos** del objeto. Por ejemplo, `Object.prototype` tiene la propiedad `.toString()`, entonces si volvemos a crear `perro` heredando de `animal`, su propiedad `.toString()` que será? Javascript recorrerá la jerarquía de prototipos de `perro` hasta encontrar `.toString()` que está en `Object.prototype`.
 
-    var animal = {};
-    animal.estaVivo = function() {
-        return true;
-    };
-    
-    var perro = {};
-    perro.__proto__ = animal;
-    console.log(perro.toString === Object.prototype.toString);
-    
+```javascript
+var animal = {};
+animal.estaVivo = function() {
+    return true;
+};
+
+var perro = {};
+perro.__proto__ = animal;
+console.log(perro.toString === Object.prototype.toString);
+```
 
 <a href="http://jsfiddle.net/amatiasq/4rVg4/" target="_blank">Pruébame</a>
 
@@ -79,10 +83,11 @@ Bien, la teoría ha ido correctamente, pero como ya dijimos, **`__proto__` no es
 
 **Toda función, creada en Javascript tiene una propiedad llamada `.prototype` que no debe confundirse con `[[Prototype]]`**, el `[[Prototype]]` de las funciones apunta a `Function.prototype` que es un objeto que tiene funciones como `.call()`, `.apply()` y `.bind()`. No, en éste caso nos referimos a que todas las funciones tienen una propiedad llamada `prototype` que es un objeto vacío. Y porqué se llama `prototype` si no tiene nada que ver con el `[[Prototype]]` de la función? **Porque los objetos que creemos llamando a ésa función con `new` tendrán su `[[Prototype]]` apuntando a la propiedad `prototype` de la función:**
 
-    function myFunct() { }
-    var obj = new myFunct();
-    console.log(obj.__proto__ === myFunct.prototype); 
-    
+```javascript
+function myFunct() { }
+var obj = new myFunct();
+console.log(obj.__proto__ === myFunct.prototype); 
+```
 
 <a href="http://jsfiddle.net/amatiasq/r2F8G/" target="_blank">Pruébame</a>
 
@@ -90,38 +95,40 @@ Sorpresa! **Hemos modificado la propiedad oculta `[[Prototype]]` de `obj`!** Qui
 
 Pero **entonces `myFunct` es una clase? Podría decirse que si, pero no es una clase como las que estamos acostumbrados a ver, es una función, es un objeto y es tangible**, el hecho de crear nuevos objetos con `new` seguido de una función es solo una sintaxis que se añadió a Javascript para parecerse a Java, lenguaje en plena expansión cuando Javascript fue diseñado. Ahora que entendemos que `myFunct.prototype` es igual al `[[Prototype]]` de los objetos que creemos con la función podemos crear objetos que extiendan del mismo objeto:
 
-    function myFunct() { }
-    myFunct.prototype = {
-        name: "Alice",
-        lastname: "Smith",
-        fullname: function() { 
-            return this.name + ' ' + this.lastname;
-        }
-    };
-    
-    var instancia1 = new myFunct();
-    var instancia2 = new myFunct();
-    
-    console.log(instancia1.fullname() + '\n' + instancia2.fullname());
-    console.log(instancia1.__proto__ == instancia2.__proto__); 
-    
+```javascript
+function myFunct() { }
+myFunct.prototype = {
+    name: "Alice",
+    lastname: "Smith",
+    fullname: function() { 
+        return this.name + ' ' + this.lastname;
+    }
+};
+
+var instancia1 = new myFunct();
+var instancia2 = new myFunct();
+
+console.log(instancia1.fullname() + '\n' + instancia2.fullname());
+console.log(instancia1.__proto__ == instancia2.__proto__); 
+```
 
 <a href="http://jsfiddle.net/amatiasq/F2yQy/" target="_blank">Pruébame</a>
 
 E incluso podemos crear un objeto que extienda de una instancia de myFunct!
 
-    instancia1.name = "Bob";
-    function extenderInstancia1() { }
-    extenderInstancia1.prototype = instancia1;
-    var subInstancia = new extenderInstancia1();
-    
-    var texto = "Fullname: " + subInstancia.fullname() + '\n';
-    texto += "Es instancia de extenderInstancia1? " + (subInstancia instanceof extenderInstancia1) + '\n';
-    texto += "Es instancia de myFunct? " + (subInstancia instanceof myFunct) + '\n';
-    texto += "Es instancia de Object? " + (subInstancia instanceof Object);
-    
-    alert(texto); 
-    
+```javascript
+instancia1.name = "Bob";
+function extenderInstancia1() { }
+extenderInstancia1.prototype = instancia1;
+var subInstancia = new extenderInstancia1();
+
+var texto = "Fullname: " + subInstancia.fullname() + '\n';
+texto += "Es instancia de extenderInstancia1? " + (subInstancia instanceof extenderInstancia1) + '\n';
+texto += "Es instancia de myFunct? " + (subInstancia instanceof myFunct) + '\n';
+texto += "Es instancia de Object? " + (subInstancia instanceof Object);
+
+alert(texto); 
+```
 
 <a href="http://jsfiddle.net/amatiasq/Ggj6T/" target="_blank">Pruébame</a>
 
@@ -129,30 +136,32 @@ E incluso podemos crear un objeto que extienda de una instancia de myFunct!
 
 Pero éste lío de tener funciones que parecen clases pero no son clases exactamente y crean instancias y tener que crear funciones para extender es bastante confuso, por ello, los defensores de no mezclar la herencia por prototipos con éstas falsas clases proponen usar la función `extend`:
 
-    function extend(proto) {
-        function intermediario() { }
-        intermediario.prototype = proto;
-        return new intermediario;
-    }
-    
+```javascript
+function extend(proto) {
+    function intermediario() { }
+    intermediario.prototype = proto;
+    return new intermediario;
+}
+```
 
 Y con ésta función podemos extender objetos sin necesidad de crear funciones intermedias:
 
-    var base = {
-        name: "Alice",
-        lastname: "Smith",
-        fullname: function() { 
-            return this.name + ' ' + this.lastname;
-        }
-    };
-    
-    var instancia1 = extend(base);
-    var instancia2 = extend(base);
-    
-    instancia1.name = "Bob";
-    var subInstancia = extend(instancia1);
-    console.log(subInstancia.fullname()); 
-    
+```javascript
+var base = {
+    name: "Alice",
+    lastname: "Smith",
+    fullname: function() { 
+        return this.name + ' ' + this.lastname;
+    }
+};
+
+var instancia1 = extend(base);
+var instancia2 = extend(base);
+
+instancia1.name = "Bob";
+var subInstancia = extend(instancia1);
+console.log(subInstancia.fullname()); 
+```
 
 <a href="http://jsfiddle.net/amatiasq/WZFAH/" target="_blank">Pruébame</a>
 

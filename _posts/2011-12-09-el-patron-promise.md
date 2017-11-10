@@ -12,18 +12,21 @@ Recientemente he tenido que implementar un sistema MVC en Javascript para simpli
 
 Todas las llamadas reciben un último argumento que es el callback:
 
-    var dir = new Directory('file:///home/user/Desktop');
-    dir.browse(function(dir, items) {
-      // ...
-    });
-    
+```javascript
+var dir = new Directory('file:///home/user/Desktop');
+dir.browse(function(dir, items) {
+  // ...
+});
+```
+
 
 Con ésto la API resulta confusa desde el punto de vista de la simpleza y de la semántica. Semánticamente una función recibe la información mínima indispensable para devolver un dato relacionado a lo que se le ha solicitado, como vemos no es el caso en métodos asíncronos:
 
-    void Directory.browse(Function callback);
-    void File.getContent(String encoding, Function callback);
-    void File.getPermission(Function callback);
-    
+```javascript
+void Directory.browse(Function callback);
+void File.getContent(String encoding, Function callback);
+void File.getPermission(Function callback);
+```
 
 <!--more Seguir leyendo → -->
 
@@ -31,15 +34,16 @@ Con ésto la API resulta confusa desde el punto de vista de la simpleza y de la 
 
 En muchas ocaciones deberemos ejecutar una llamada al acabar otra, ésto nos obliga a anidar callbacks:
 
-    var file = new File();
-    file.isReadable(function(permission) {
-      if (permission) {
-        file.getContent(function(content) {
-          // do something with the content
-        });
-      }
+```javascript
+var file = new File();
+file.isReadable(function(permission) {
+  if (permission) {
+    file.getContent(function(content) {
+      // do something with the content
     });
-    
+  }
+});
+```
 
 A medida que vamos añadiendo niveles de profundidad ésto se vuelve muy confuso.
 
@@ -47,24 +51,25 @@ A medida que vamos añadiendo niveles de profundidad ésto se vuelve muy confuso
 
 También necesitaremos realizar llamadas asíncronas paralelas y ejecutar una acción al acabar todas:
 
-    var isFile1Done = false;
-    var isFile2Done = false;
-    
-    function testIsOver() {
-      if (isFile1Done && isFile2Done) {
-        // Both files loaded.
-      }
-    }
-    
-    File.get('http://www.somedomain.com/file1', function() {
-      isFile1Done = true;
-      testIsOVer();
-    });
-    File.get('http://www.somedomain.com/file2', function() {
-      isFile2Done = true;
-      testIsOVer();
-    });
-    
+```javascript
+var isFile1Done = false;
+var isFile2Done = false;
+
+function testIsOver() {
+  if (isFile1Done && isFile2Done) {
+    // Both files loaded.
+  }
+}
+
+File.get('http://www.somedomain.com/file1', function() {
+  isFile1Done = true;
+  testIsOVer();
+});
+File.get('http://www.somedomain.com/file2', function() {
+  isFile2Done = true;
+  testIsOVer();
+});
+```
 
 Como podemos ver algo tan sencillo como dos peticiones paralelas necesitan mucho código para manejarlas.
 
@@ -72,13 +77,15 @@ Como podemos ver algo tan sencillo como dos peticiones paralelas necesitan mucho
 
 Es traumática la forma de gestionar errores mediante callbacks, el método más extendido que he visto ha sido el de nodejs, el primer argumento de cada callback es el objeto Error si es que hubo alguna excepción, lo que me parece horrible ya que cada función debe confirmar que su primer argumento es `undefined` para asegurar que no han habido errores:
 
-    File.get('http://www.somedomain.com/file2', function(error, file) {
-      if (error) {
-        // Show blue screen of death
-      }
-      // do something with file.
-    });
-    
+```javascript
+File.get('http://www.somedomain.com/file2', function(error, file) {
+  if (error) {
+    // Show blue screen of death
+  }
+  // do something with file.
+});
+```
+
 
 ## SOLUCION
 
@@ -88,60 +95,65 @@ Queda claro que las peticiones asíncronas son necesarias en cliente y servidor 
 
 La función solo debe recibir la información necesaria para hacer la petición y devuelve la promesa de que esos datos llegarán.
 
-    var dir = new Directory('file:///home/user/Desktop');
-    var promise = dir.browse();
-    promise.then(function(dir, items) {
-      // ...
-    });
-    
+```javascript
+var dir = new Directory('file:///home/user/Desktop');
+var promise = dir.browse();
+promise.then(function(dir, items) {
+  // ...
+});
+```
 
 Y ésto aún lo podríamos mejorar llamando directamente a la función then sin guardar el promise en una variable:
 
-    var dir = new Directory('file:///home/user/Desktop');
-    dir.browse().then(function(dir, items) {
-      // ...
-    });
-    
+```javascript
+var dir = new Directory('file:///home/user/Desktop');
+dir.browse().then(function(dir, items) {
+  // ...
+});
+```
 
 Y muchos dirán ¿qué diferencia hay entre ésto y el código que teníamos antes? Es sencillo, la diferencia está en quién maneja el callback. Con el código anterior cada función debía encargarse de comprobar si se le había pasado un callback válido y llamarlo al acabar su tarea con los argumentos necesarios. Ahora todo ése código está en la clase `Promise` y la función puede encargarse de aquello que le corresponde siempre que devuelva un promise y le notifique cuando termine. Finalmente la API queda bastante más clara:
 
-    Promise<Array<File>> Directory.browse();
-    Promise<String> File.getContent(String encoding);
-    Promise<Boolean> File.getPermission();
-    
+```javascript
+Promise<Array<File>> Directory.browse();
+Promise<String> File.getContent(String encoding);
+Promise<Boolean> File.getPermission();
+```
 
 ### 2 - Llamadas secuenciales
 
 El promise trae una sorpresa que no me esperaba, el método `then` de la clase `Promise` devuelve un nuevo `promise`. Para qué? para poder ejecutar código secuencialmente, veamoslo:
 
-    var file = new File();
-    file.isReadable()
-      .then(function(permission) {
-        if (permission) {
-          return file.getContent();
-        }
-    })
-    .then(function(content) {
-      // do something with the content
-    });
-    
+```javascript
+var file = new File();
+file.isReadable()
+  .then(function(permission) {
+    if (permission) {
+      return file.getContent();
+    }
+})
+.then(function(content) {
+  // do something with the content
+});
+```
 
 Qué es ésta locura? La idea es muy sencilla, pero es confusa porque la explicación utiliza demasiadas veces la palabra `Promise`, primero expandiremos el código para verlo más claro:
 
-    var file = new File();
-    var promise1 = file.isReadable();
-    
-    var promise2 = promise1.then(function(permission) {
-      if (permission) {
-        var promise3 = file.getContent();
-        return promise3;
-      }
-    });
-    
-    promise2.then(function(content) {
-      // do something with the content
-    });
-    
+```javascript
+var file = new File();
+var promise1 = file.isReadable();
+
+var promise2 = promise1.then(function(permission) {
+  if (permission) {
+    var promise3 = file.getContent();
+    return promise3;
+  }
+});
+
+promise2.then(function(content) {
+  // do something with the content
+});
+```
 
 Debemos intentar seguirlo poco a poco, la llamada a llamada `file.isReadable()` nos devuelve `promise1`, y cuando llamamos al método then de `promise1` nos devuelve `promise2`. Cuando `promise1` termina se ejecuta el callback pasado y se descubre que el callback devuelve un nuevo `Promise`, `promise3`. Cuando `promise3` se cumpla (es decir pase a estado "done") también se cumplirá el `promise2` ejecutando el callback que le han pasado. En resumen, podemos seguir añadiendo callbacks que se ejecutarán al acabar el anterior encadenando llamadas a then.
 
@@ -149,22 +161,24 @@ Debemos intentar seguirlo poco a poco, la llamada a llamada `file.isReadable()` 
 
 Además me planteé añadir la posibilidad de manejar llamadas paralelas desde `Promise`, puesto que ya hemos visto lo complejo que puede ser. Para ésto añadí el método `and` al Promise:
 
-    File.get('http://www.somedomain.com/file1')
-      .and(File.get('http://www.somedomain.com/file2'))
-      .then(function() {
-        // Both files loaded.
-      });
-    
+```javascript
+File.get('http://www.somedomain.com/file1')
+  .and(File.get('http://www.somedomain.com/file2'))
+  .then(function() {
+    // Both files loaded.
+  });
+```
 
 Una vez más expandamos el código para ver más claramente que está sucediendo:
 
-    var promise1 = File.get('http://www.somedomain.com/file1');
-    var promise2 = File.get('http://www.somedomain.com/file2');
-    var promise3 = promise1.and(promise2);
-    promise3.then(function() {
-      // Both files loaded.
-    });
-    
+```javascript
+var promise1 = File.get('http://www.somedomain.com/file1');
+var promise2 = File.get('http://www.somedomain.com/file2');
+var promise3 = promise1.and(promise2);
+promise3.then(function() {
+  // Both files loaded.
+});
+```
 
 Al expandirlo es más fácil ver lo que sucede, todo `Promise` tiene un método `and` al que se le pasa otro `Promise`, y ésto devuelve un nuevo `Promise` que se cumplirá cuando los dos primeros estén cumplidos.
 
@@ -172,12 +186,13 @@ Al expandirlo es más fácil ver lo que sucede, todo `Promise` tiene un método 
 
 Finalmente el patrón Promise también trae una mejora al problema de la gestión de errores, aún no lo he mencionado pero el método `then` recibe dos argumentos: el primero el callback que será llamado cuando el Promise se cumpla, el segundo otro callback que será llamado si la ejecución asíncrona falla:
 
-    File.get('http://www.somedomain.com/file2').then(function(file) {
-      // do something with file.
-    }, function(error) {
-      // Show blue screen of death
-    });
-    
+```javascript
+File.get('http://www.somedomain.com/file2').then(function(file) {
+  // do something with file.
+}, function(error) {
+  // Show blue screen of death
+});
+```
 
 Esto nos permite separar claramente la responsabilidad de cada función y nos libera de la carga de comprobar errores.
 

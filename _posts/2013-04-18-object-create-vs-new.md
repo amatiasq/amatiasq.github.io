@@ -8,42 +8,46 @@ JotaEseros! Tengo un dilema existencial que me impide dormir.
 
 Hasta donde sé los constructores hacen más o menos esto
 
-    function fakeNew(Ctor) {
-      var instance = Object.create(Ctor.prototype);
-      instance.constructor();
-      return instance;
-    }
-    
+```javascript
+function fakeNew(Ctor) {
+  var instance = Object.create(Ctor.prototype);
+  instance.constructor();
+  return instance;
+}
+```
 
 Todo empezó cuando quise hacer polyfill de Object.create(), así podría crear objectos sin usar `new`, decidí usar la versión sencilla
 
-    Object.create = function(proto) {
-      function F() { }
-      F.prototype = proto;
-      return new F();
-    }
-    
+```javascript
+Object.create = function(proto) {
+  function F() { }
+  F.prototype = proto;
+  return new F();
+}
+```
 
 Y empecé a crear un montón de objetos y a prototiparlos, pero como los objetos muchas veces necesitaban inicializar sus propiedades les hice el método `.init()`
 
-    var base = {
-      init: function() {
-        EmitterMixin.call(this);
-        return this;
-      }
-    };
-    
-    var obj = Object.create(base).init();
-    
+```javascript
+var base = {
+  init: function() {
+    EmitterMixin.call(this);
+    return this;
+  }
+};
+
+var obj = Object.create(base).init();
+```
 
 Pero claro, tengo que acordarme de devolver `this` siempre al acabar `.init()` y muchas veces lo olvidaba o me olvidaba de invocar `.init()` que es peor. Así que intentando como simplificar la inicialización de un objeto pensé crear una funcioń global que se encargara de invocar a `Object.create`, llamar a la función inicializadora y devolver this:
 
-    function create(proto) {
-      var child = Object.create(proto);
-      child.init();
-      return child;
-    }
-    
+```javascript
+function create(proto) {
+  var child = Object.create(proto);
+  child.init();
+  return child;
+}
+```
 
 Y me empezaron a dar ganas de reventarme la cabeza contra la pared al darme cuenta que **lo que estaba haciendo es prácticamente lo mismo que hace el operador nativo `new`** pero mucho más lento y, en caso de usar el polyfill the `Object.create` incluso usando `new` por debajo.
 
@@ -51,18 +55,19 @@ Entonces me pregunto, que beneficios aporta abandonar `new`? es [notablemente m�
 
 Y lo que es más grave aún, he notado que **usaba dos tipos diferentes de objetos**, unos "*abstractos*" y otros "*instancias*" la mayor diferencia es que en las instancias tenía que invocar `.init()` siempre mientras que los abstractos no era necesario porque solo serían usados para crear otros objetos que los prototiparan. Y es un patrón que he visto mientras usaba `new`:
 
-    function Foo() { }
-    Foo.prototype.method = function() { ... };
-    
-    function Bar() { }
-    // Objeto "abstracto", no se invoca inicializador
-    Bar.prototype = Object.create(Foo.prototype);
-    Bar.prototype.other = function() { ... };
-    
-    // Objeto "instancia"
-    // se invoca el constructor como inicializador
-    var obj = new Bar();
-    
+```javascript
+function Foo() { }
+Foo.prototype.method = function() { ... };
+
+function Bar() { }
+// Objeto "abstracto", no se invoca inicializador
+Bar.prototype = Object.create(Foo.prototype);
+Bar.prototype.other = function() { ... };
+
+// Objeto "instancia"
+// se invoca el constructor como inicializador
+var obj = new Bar();
+```
 
 Realmente hay es una ventaja abandonar `new`? estamos seguros que no se trata de una herramienta de alto nivel que simplifica algo que igualmente tendremos que hacer nosotros a mano? Que pros y contras tienen `new` y `Object.create`?
 
