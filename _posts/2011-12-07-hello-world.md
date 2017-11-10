@@ -1,0 +1,12 @@
+---
+layout: post
+title: Hello World!
+---
+
+    int main(char** args) {
+      print("Hello World!");
+      return 0;
+    }
+    
+
+Y así es como un blog de programación debe empezar.
